@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>动物救援桥 (Animal Rescue Bridge)</title>
+    <style>
+        :root {
+            --brother-bg: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            --sister-bg: linear-gradient(135deg, #fccb90 0%, #d57eeb 100%);
+            --text-color: #4a4a4a;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body {
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+            background-color: #4facfe;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        /* 音乐控制按钮 */
+        .music-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #00bcd4;
+            box-shadow: 0 4px 0 #00bcd4;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.1s;
+        }
+        .music-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 transparent;
+        }
+        .music-btn.off {
+            filter: grayscale(100%);
+            opacity: 0.7;
+        }
+
+        /* 哥哥区域 */
+        #brother-zone {
+            flex: 1;
+            background: var(--brother-bg);
+            transform: rotate(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 6px dashed #fff;
+            position: relative;
+        }
+
+        /* 中间河流和桥梁区域 */
+        #river-zone {
+            height: 180px;
+            background: linear-gradient(180deg, #4facfe 0%, #00f2fe 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top: 6px solid #fff;
+            border-bottom: 6px solid #fff;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        /* 妹妹区域 */
+        #sister-zone {
+            flex: 1;
+            background: var(--sister-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-top: 6px dashed #fff;
+            position: relative;
+        }
+
+        h2 { font-size: 26px; color: #fff; margin-bottom: 10px; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+
+        /* 交通灯 */
+        .traffic-light {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            margin: 10px;
+            border: 6px solid #fff;
+            box-shadow: 0 8px 0 #bdbdbd, inset 0 0 10px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+        }
+        .light-red { background: #ff7675; box-shadow: 0 8px 0 #d63031, 0 0 20px #ff7675; }
+        .light-green { background: #55efc4; box-shadow: 0 8px 0 #00b894, 0 0 20px #55efc4; }
+
+        /* 操作按钮 */
+        .action-btn {
+            font-size: 28px;
+            padding: 15px 35px;
+            border: 5px solid #fff;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+            transition: all 0.1s;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+        }
+        .action-btn:active {
+            transform: translateY(8px);
+            box-shadow: 0 0 0 transparent !important;
+        }
+        #btn-plank { background: #e17055; box-shadow: 0 8px 0 #d63031; }
+        #btn-hammer { background: #0984e3; box-shadow: 0 8px 0 #74b9ff; border-color: #74b9ff; }
+
+        /* 桥梁 */
+        .bridge-container {
+            display: flex;
+            gap: 10px;
+            width: 80%;
+            height: 80px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 10px;
+            border: 4px dashed #fff;
+        }
+        .plank-slot {
+            flex: 1;
+            border: 4px dashed rgba(255,255,255,0.8);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 35px;
+            color: transparent;
+            transition: all 0.3s;
+            background: rgba(0,0,0,0.05);
+        }
+        .plank-slot.has-plank {
+            background: #ffeaa7;
+            border: 4px solid #fdcb6e;
+            box-shadow: inset 0 -5px 0 rgba(0,0,0,0.1);
+        }
+        .plank-slot.hammered {
+            color: #2d3436; /* 显示钉子 📌 */
+            text-shadow: 1px 1px 0 #fff;
+        }
+
+        /* 动物 */
+        #animal {
+            font-size: 60px;
+            position: absolute;
+            left: 2%;
+            bottom: 60px;
+            transition: left 0.5s;
+            animation: bounce 1s infinite;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+            z-index: 10;
+        }
+        #target {
+            font-size: 60px;
+            position: absolute;
+            right: 2%;
+            bottom: 60px;
+            animation: float 2s infinite;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2));
+        }
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            50% { transform: translateX(10px) rotate(5deg); }
+            75% { transform: translateX(-10px) rotate(-5deg); }
+            100% { transform: translateX(0); }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .status-msg {
+            font-size: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+            margin-top: 15px;
+            font-weight: bold;
+            height: 28px;
+            letter-spacing: 1px;
+        }
+
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">⬅️ 返回菜单</a>
+    <div class="music-btn off" id="music-toggle" onclick="toggleMusic()">🔇</div>
+
+    <!-- 哥哥区域 -->
+    <div id="brother-zone">
+        <h2>🧑 哥哥：放木板</h2>
+        <div class="traffic-light" id="light-brother"></div>
+        <button class="action-btn" id="btn-plank">🪵 放木板</button>
+        <div class="status-msg" id="msg-brother"></div>
+    </div>
+
+    <!-- 河流与桥梁 -->
+    <div id="river-zone">
+        <div id="animal">🐰</div>
+        <div class="bridge-container" id="bridge">
+            <div class="plank-slot" id="slot-0">📌</div>
+            <div class="plank-slot" id="slot-1">📌</div>
+            <div class="plank-slot" id="slot-2">📌</div>
+            <div class="plank-slot" id="slot-3">📌</div>
+            <div class="plank-slot" id="slot-4">📌</div>
+        </div>
+        <div id="target">🥕</div>
+    </div>
+
+    <!-- 妹妹区域 -->
+    <div id="sister-zone">
+        <h2>👧 妹妹：钉钉子</h2>
+        <div class="traffic-light" id="light-sister"></div>
+        <button class="action-btn" id="btn-hammer">🔨 钉钉子</button>
+        <div class="status-msg" id="msg-sister"></div>
+    </div>
+
+    <script>
+        const totalSteps = 5;
+        let currentSlot = 0;
+        let turn = 'brother'; // 'brother' or 'sister'
+        let isAnimating = false;
+
+        const lightBrother = document.getElementById('light-brother');
+        const lightSister = document.getElementById('light-sister');
+        const msgBrother = document.getElementById('msg-brother');
+        const msgSister = document.getElementById('msg-sister');
+        const btnPlank = document.getElementById('btn-plank');
+        const btnHammer = document.getElementById('btn-hammer');
+        const riverZone = document.getElementById('river-zone');
+        const animal = document.getElementById('animal');
+
+        // 音效
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        function playSuccess() { playTone(600, 'sine', 0.1); }
+        function playError() { playTone(150, 'sawtooth', 0.4); }
+        function playWin() { playTone(400, 'sine', 0.1); setTimeout(() => playTone(500, 'sine', 0.1), 100); setTimeout(() => playTone(600, 'sine', 0.4), 200); }
+
+        function updateUI() {
+            if (turn === 'brother') {
+                lightBrother.className = 'traffic-light light-green';
+                lightSister.className = 'traffic-light light-red';
+                msgBrother.innerText = "绿灯！到哥哥放木板啦！";
+                msgSister.innerText = "红灯！妹妹等一等哦~";
+            } else {
+                lightBrother.className = 'traffic-light light-red';
+                lightSister.className = 'traffic-light light-green';
+                msgBrother.innerText = "红灯！哥哥等一等哦~";
+                msgSister.innerText = "绿灯！到妹妹钉钉子啦！";
+            }
+            
+            // 更新小动物位置
+            const progressRatio = currentSlot / totalSteps;
+            const startLeft = 2;
+            const endLeft = 85;
+            animal.style.left = `${startLeft + (endLeft - startLeft) * progressRatio}%`;
+        }
+
+        function triggerError(player) {
+            if(isAnimating) return;
+            isAnimating = true;
+            playError();
+            
+            riverZone.classList.add('shake');
+            if (player === 'brother') {
+                msgBrother.innerText = "❌ 还没到你的回合！桥摇晃了！";
+            } else {
+                msgSister.innerText = "❌ 还没到你的回合！桥摇晃了！";
+            }
+
+            setTimeout(() => {
+                riverZone.classList.remove('shake');
+                updateUI();
+                isAnimating = false;
+            }, 1000);
+        }
+
+        btnPlank.addEventListener('mousedown', () => {
+            if(isAnimating) return;
+            if (turn !== 'brother') {
+                triggerError('brother');
+                return;
+            }
+            
+            playSuccess();
+            const slot = document.getElementById(`slot-${currentSlot}`);
+            slot.classList.add('has-plank');
+            turn = 'sister';
+            updateUI();
+        });
+
+        btnHammer.addEventListener('mousedown', () => {
+            if(isAnimating) return;
+            if (turn !== 'sister') {
+                triggerError('sister');
+                return;
+            }
+            
+            playSuccess();
+            const slot = document.getElementById(`slot-${currentSlot}`);
+            slot.classList.add('hammered');
+            
+            currentSlot++;
+            
+            if (currentSlot >= totalSteps) {
+                winGame();
+            } else {
+                turn = 'brother';
+                updateUI();
+            }
+        });
+
+        // 触摸支持
+        btnPlank.addEventListener('touchstart', (e) => { e.preventDefault(); btnPlank.dispatchEvent(new Event('mousedown')); });
+        btnHammer.addEventListener('touchstart', (e) => { e.preventDefault(); btnHammer.dispatchEvent(new Event('mousedown')); });
+
+        function winGame() {
+            updateUI(); // 动物走到终点
+            playWin();
+            animal.innerText = '🐰🥕';
+            msgBrother.innerText = "🎉 救援成功！";
+            msgSister.innerText = "🎉 救援成功！";
+            
+            setTimeout(() => {
+                let progress = parseInt(localStorage.getItem('niceTryProgress')) || 0;
+                if (progress < 3) {
+                    localStorage.setItem('niceTryProgress', 3); // 全部通关
+                }
+                alert("🎉 太棒了！你们通关了所有的游戏！你们是全世界最默契的兄妹！");
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        // 初始化
+        updateUI();
+
+        // ====== 背景音乐生成器: 《两只老虎》 ======
+        let bgmCtx;
+        let isPlayingBgm = false;
+        let bgmInterval;
+
+        const C4 = 261.6, D4 = 293.7, E4 = 329.6, F4 = 349.2, G4 = 392.0, A4 = 440.0;
+        
+        const melodyBgm = [
+            // 两只老虎，两只老虎 (1 2 3 1, 1 2 3 1)
+            {f: C4, d: 0.5}, {f: D4, d: 0.5}, {f: E4, d: 0.5}, {f: C4, d: 0.5},
+            {f: C4, d: 0.5}, {f: D4, d: 0.5}, {f: E4, d: 0.5}, {f: C4, d: 0.5},
+            // 跑得快，跑得快 (3 4 5 -, 3 4 5 -)
+            {f: E4, d: 0.5}, {f: F4, d: 0.5}, {f: G4, d: 1.0},
+            {f: E4, d: 0.5}, {f: F4, d: 0.5}, {f: G4, d: 1.0},
+            // 一只没有耳朵，一只没有尾巴 (5 6 5 4 3 1, 5 6 5 4 3 1)
+            {f: G4, d: 0.25}, {f: A4, d: 0.25}, {f: G4, d: 0.25}, {f: F4, d: 0.25}, {f: E4, d: 0.5}, {f: C4, d: 0.5},
+            {f: G4, d: 0.25}, {f: A4, d: 0.25}, {f: G4, d: 0.25}, {f: F4, d: 0.25}, {f: E4, d: 0.5}, {f: C4, d: 0.5},
+            // 真奇怪，真奇怪 (2 5(低) 1 -, 2 5(低) 1 -)  // 这里简化用G3=196.0
+            {f: D4, d: 0.5}, {f: 196.0, d: 0.5}, {f: C4, d: 1.0},
+            {f: D4, d: 0.5}, {f: 196.0, d: 0.5}, {f: C4, d: 1.0}
+        ];
+
+        function playBgmNote(frequency, duration, startTime) {
+            if (!bgmCtx) return;
+            const osc = bgmCtx.createOscillator();
+            const gain = bgmCtx.createGain();
+            
+            osc.type = 'square'; // 两只老虎用稍微活泼的方波，音量调小点
+            osc.frequency.setValueAtTime(frequency, startTime);
+            
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.05, startTime + 0.05); // 降低音量
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.05);
+            
+            osc.connect(gain);
+            gain.connect(bgmCtx.destination);
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        function playBgmLoop() {
+            if (!isPlayingBgm) return;
+            
+            const now = bgmCtx.currentTime;
+            let timeOffset = 0;
+            const tempo = 0.6; // 播放速度
+            
+            melodyBgm.forEach(note => {
+                playBgmNote(note.f, note.d * tempo, now + timeOffset);
+                timeOffset += note.d * tempo;
+            });
+            
+            bgmInterval = setTimeout(playBgmLoop, (timeOffset + 0.5) * 1000);
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('music-toggle');
+            if (!bgmCtx) { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            if (bgmCtx.state === 'suspended') { bgmCtx.resume(); }
+
+            isPlayingBgm = !isPlayingBgm;
+            if (isPlayingBgm) {
+                btn.classList.remove('off');
+                btn.innerText = '🎵';
+                playBgmLoop();
+            } else {
+                btn.classList.add('off');
+                btn.innerText = '🔇';
+                clearTimeout(bgmInterval);
+            }
+        }
+    </script>
+</body>
+</html>

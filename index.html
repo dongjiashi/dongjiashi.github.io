@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>兄妹合作闯关之旅 (Nice Try)</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            --text-color: #4a4a4a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', 'Marker Felt', sans-serif;
+            background: var(--bg-gradient);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 36px;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0px #fff;
+            letter-spacing: 2px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        p.subtitle {
+            font-size: 20px;
+            color: #555;
+            margin-bottom: 30px;
+            font-weight: bold;
+            background: rgba(255,255,255,0.6);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 3px dashed #fff;
+        }
+
+        .level-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .level-card {
+            background: #fff;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 10px 0 #ffb3ba;
+            border: 5px solid #ffdfba;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.1s, box-shadow 0.1s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .level-card:nth-child(2) { box-shadow: 0 10px 0 #baffc9; border-color: #8ce8a3; }
+        .level-card:nth-child(3) { box-shadow: 0 10px 0 #bae1ff; border-color: #8cb9e8; }
+
+        .level-card:active:not(.locked) {
+            transform: translateY(10px);
+            box-shadow: 0 0 0 transparent !important;
+        }
+
+        .level-card h2 {
+            font-size: 26px;
+            color: #ff9e9e;
+            margin-bottom: 5px;
+            text-shadow: 1px 1px 0px #eee;
+        }
+        .level-card:nth-child(2) h2 { color: #8ce8a3; }
+        .level-card:nth-child(3) h2 { color: #8cb9e8; }
+
+        .level-card p {
+            font-size: 16px;
+            color: #666;
+            font-weight: bold;
+        }
+        .level-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+            animation: float 2.5s ease-in-out infinite;
+        }
+        .level-card:nth-child(2) .level-icon { animation-delay: 0.3s; }
+        .level-card:nth-child(3) .level-icon { animation-delay: 0.6s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+
+        /* 锁定状态 */
+        .level-card.locked {
+            background: #f0f0f0;
+            border-color: #ccc;
+            box-shadow: 0 10px 0 #bbb;
+            cursor: not-allowed;
+            color: #999;
+        }
+        .level-card.locked h2, .level-card.locked p {
+            color: #999;
+            text-shadow: none;
+        }
+        .lock-icon {
+            position: absolute;
+            font-size: 70px;
+            color: rgba(0,0,0,0.15);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+        .level-card.locked .lock-icon {
+            display: block;
+        }
+        .level-card.locked .level-icon {
+            opacity: 0.2;
+            animation: none;
+        }
+
+        .reset-btn {
+            margin-top: 40px;
+            padding: 12px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: inherit;
+            background: #ffb3ba;
+            border: 4px solid #ff9e9e;
+            border-radius: 20px;
+            color: #fff;
+            box-shadow: 0 6px 0 #ff9e9e;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .reset-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 transparent;
+        }
+
+        /* 音乐控制按钮 */
+        .music-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #fff;
+            border: 4px solid #a1c4fd;
+            box-shadow: 0 6px 0 #a1c4fd;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.1s;
+        }
+        .music-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 transparent;
+        }
+        .music-btn.off {
+            filter: grayscale(100%);
+            opacity: 0.7;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="music-btn off" id="music-toggle" onclick="toggleMusic()">🔇</div>
+
+    <h1>👦👧 谦谦&闲闲 大闯关～</h1>
+    <p class="subtitle">哥哥和妹妹一起玩，只有合作才能解锁下一关哦！</p>
+
+    <div class="level-container">
+        <!-- 关卡 A -->
+        <div class="level-card" id="level-0" onclick="startGame(0)">
+            <div class="level-icon">🍰</div>
+            <h2>第 1 关：魔法点心屋</h2>
+            <p>学习：礼貌请求（说“请”）</p>
+            <div class="lock-icon">🔒</div>
+        </div>
+
+        <!-- 关卡 B -->
+        <div class="level-card locked" id="level-1" onclick="startGame(1)">
+            <div class="level-icon">⛵</div>
+            <h2>第 2 关：双人寻宝船</h2>
+            <p>学习：友好商量与同步合作</p>
+            <div class="lock-icon">🔒</div>
+        </div>
+
+        <!-- 关卡 C -->
+        <div class="level-card locked" id="level-2" onclick="startGame(2)">
+            <div class="level-icon">🌉</div>
+            <h2>第 3 关：动物救援桥</h2>
+            <p>学习：各司其职与排队轮流</p>
+            <div class="lock-icon">🔒</div>
+        </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetProgress()">重新开始游戏 (清除进度)</button>
+
+    <script>
+        // 获取当前进度
+        let progress = parseInt(localStorage.getItem('niceTryProgress')) || 0;
+        
+        // 更新UI解锁状态
+        function updateLevels() {
+            for (let i = 0; i <= 2; i++) {
+                const card = document.getElementById(`level-${i}`);
+                if (i <= progress) {
+                    card.classList.remove('locked');
+                } else {
+                    card.classList.add('locked');
+                }
+            }
+        }
+
+        // 进入游戏
+        function startGame(levelIndex) {
+            if (levelIndex > progress) {
+                alert("还没解锁哦！请先通过上一关。");
+                return;
+            }
+            if (levelIndex === 0) window.location.href = 'game_a.html';
+            if (levelIndex === 1) window.location.href = 'game_b.html';
+            if (levelIndex === 2) window.location.href = 'game_c.html';
+        }
+
+        // 清除进度（方便测试）
+        function resetProgress() {
+            if(confirm("确定要重新开始吗？所有关卡将重新锁定。")) {
+                localStorage.setItem('niceTryProgress', 0);
+                progress = 0;
+                updateLevels();
+            }
+        }
+
+        // 初始化
+        updateLevels();
+
+        // ====== 背景音乐生成器 (Web Audio API) ======
+        let audioCtx;
+        let isPlaying = false;
+        let musicInterval;
+
+        // 小星星 (Twinkle Twinkle Little Star) 旋律
+        // C调: C4=261.6, D4=293.7, E4=329.6, F4=349.2, G4=392.0, A4=440.0, B4=493.9
+        const C = 261.6, D = 293.7, E = 329.6, F = 349.2, G = 392.0, A = 440.0;
+        
+        const melody = [
+            // 一闪一闪亮晶晶 (1 1 5 5 6 6 5)
+            {f: C, d: 0.5}, {f: C, d: 0.5}, {f: G, d: 0.5}, {f: G, d: 0.5}, 
+            {f: A, d: 0.5}, {f: A, d: 0.5}, {f: G, d: 1.0},
+            // 满天都是小星星 (4 4 3 3 2 2 1)
+            {f: F, d: 0.5}, {f: F, d: 0.5}, {f: E, d: 0.5}, {f: E, d: 0.5}, 
+            {f: D, d: 0.5}, {f: D, d: 0.5}, {f: C, d: 1.0},
+            // 挂在天上放光明 (5 5 4 4 3 3 2)
+            {f: G, d: 0.5}, {f: G, d: 0.5}, {f: F, d: 0.5}, {f: F, d: 0.5}, 
+            {f: E, d: 0.5}, {f: E, d: 0.5}, {f: D, d: 1.0},
+            // 好像许多小眼睛 (5 5 4 4 3 3 2)
+            {f: G, d: 0.5}, {f: G, d: 0.5}, {f: F, d: 0.5}, {f: F, d: 0.5}, 
+            {f: E, d: 0.5}, {f: E, d: 0.5}, {f: D, d: 1.0}
+        ];
+
+        function playNote(frequency, duration, startTime) {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'sine'; // 正弦波，听起来像八音盒一样柔和
+            osc.frequency.setValueAtTime(frequency, startTime);
+            
+            // 包络控制，让声音更像敲击乐器
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05); // 起音
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.05); // 释音
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        function playMelodyLoop() {
+            if (!isPlaying) return;
+            
+            const now = audioCtx.currentTime;
+            let timeOffset = 0;
+            const tempo = 0.5; // 播放速度调整 (稍微调慢一点适合小星星)
+            
+            // 安排这一轮的音符
+            melody.forEach(note => {
+                playNote(note.f, note.d * tempo, now + timeOffset);
+                timeOffset += note.d * tempo;
+            });
+            
+            // 循环安排下一轮 (稍微加一点停顿)
+            musicInterval = setTimeout(playMelodyLoop, (timeOffset + 0.5) * 1000);
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('music-toggle');
+            
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            isPlaying = !isPlaying;
+            
+            if (isPlaying) {
+                btn.classList.remove('off');
+                btn.innerText = '🎵';
+                playMelodyLoop();
+            } else {
+                btn.classList.add('off');
+                btn.innerText = '🔇';
+                clearTimeout(musicInterval);
+            }
+        }
+    </script>
+</body>
+</html>

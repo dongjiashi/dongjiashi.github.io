@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>双人寻宝船 (Treasure Ship)</title>
+    <style>
+        :root {
+            --brother-bg: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            --sister-bg: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            --text-color: #4a4a4a;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        body {
+            font-family: 'Comic Sans MS', 'Arial Rounded MT Bold', sans-serif;
+            background-color: #66a6ff;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+            z-index: 100;
+        }
+
+        /* 音乐控制按钮 */
+        .music-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #0288d1;
+            box-shadow: 0 4px 0 #0288d1;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.1s;
+        }
+        .music-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 transparent;
+        }
+        .music-btn.off {
+            filter: grayscale(100%);
+            opacity: 0.7;
+        }
+
+        /* 哥哥区域 */
+        #brother-zone {
+            flex: 1;
+            background: var(--brother-bg);
+            transform: rotate(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 6px dashed #fff;
+            padding: 10px;
+            position: relative;
+        }
+
+        /* 中间海洋区域 */
+        #sea-zone {
+            height: 160px;
+            background: linear-gradient(180deg, #89f7fe 0%, #66a6ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            border-top: 6px solid #fff;
+            border-bottom: 6px solid #fff;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+            font-size: 30px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 5px;
+        }
+
+        /* 妹妹区域 */
+        #sister-zone {
+            flex: 1;
+            background: var(--sister-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-top: 6px dashed #fff;
+            padding: 10px;
+            position: relative;
+        }
+
+        h2 { font-size: 26px; color: #fff; margin-bottom: 10px; text-shadow: 2px 2px 0px rgba(0,0,0,0.1); }
+
+        /* 船 */
+        #ship {
+            font-size: 70px;
+            position: absolute;
+            left: 10%;
+            transition: all 0.5s ease-in-out;
+            transform-origin: center;
+            animation: float 2s ease-in-out infinite;
+            filter: drop-shadow(0 10px 5px rgba(0,0,0,0.2));
+        }
+        
+        .spin { animation: spin 1s linear !important; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* 终点宝藏 */
+        #treasure {
+            font-size: 60px;
+            position: absolute;
+            right: 10%;
+            animation: bounce 2s infinite;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.3));
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* 选择按钮区域 */
+        .choices {
+            display: flex;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .choice-btn {
+            font-size: 55px;
+            width: 110px;
+            height: 110px;
+            border-radius: 30px;
+            border: 5px solid #fff;
+            background: #fff;
+            box-shadow: 0 10px 0 #ffb3ba;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: float 3s ease-in-out infinite;
+        }
+        .choice-btn:nth-child(2) { animation-delay: 0.5s; box-shadow: 0 10px 0 #baffc9; }
+
+        .choice-btn:active, .choice-btn.selected {
+            transform: translateY(10px) !important;
+            box-shadow: 0 0 0 transparent !important;
+            border-color: #a8edea;
+            background: #e0f7fa;
+            animation: none;
+        }
+
+        .status-msg {
+            font-size: 20px;
+            color: #fff;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+            margin-top: 20px;
+            font-weight: bold;
+            height: 30px;
+            letter-spacing: 1px;
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 10px;
+            display: flex;
+            gap: 12px;
+        }
+        .dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+        .dot.active { background: #ffeaa7; border-color: #fdcb6e; box-shadow: 0 0 10px #ffeaa7; }
+
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">⬅️ 返回菜单</a>
+    <div class="music-btn off" id="music-toggle" onclick="toggleMusic()">🔇</div>
+
+    <!-- 哥哥区域 -->
+    <div id="brother-zone">
+        <h2>🧑 哥哥：商量去哪里？</h2>
+        <div class="choices" id="brother-choices">
+            <!-- 动态生成 -->
+        </div>
+        <div class="status-msg" id="brother-msg">请大声和妹妹商量！</div>
+        <div class="progress-bar" id="brother-progress"></div>
+    </div>
+
+    <!-- 海洋区域 -->
+    <div id="sea-zone">
+        🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊🌊
+        <div id="ship">⛵</div>
+        <div id="treasure">👑</div>
+    </div>
+
+    <!-- 妹妹区域 -->
+    <div id="sister-zone">
+        <h2>👧 妹妹：商量去哪里？</h2>
+        <div class="choices" id="sister-choices">
+            <!-- 动态生成 -->
+        </div>
+        <div class="status-msg" id="sister-msg">请大声和哥哥商量！</div>
+        <div class="progress-bar" id="sister-progress"></div>
+    </div>
+
+    <script>
+        const levels = [
+            { choices: ['🍎', '🍌'], target: null }, // 随便选，只要一样就行
+            { choices: ['🐶', '🐱'], target: null },
+            { choices: ['🚗', '✈️'], target: null },
+            { choices: ['🌞', '🌙'], target: null },
+            { choices: ['❤️', '⭐'], target: null }
+        ];
+
+        let currentLevel = 0;
+        let brotherSelection = null;
+        let sisterSelection = null;
+        let isAnimating = false;
+
+        const ship = document.getElementById('ship');
+        const bChoices = document.getElementById('brother-choices');
+        const sChoices = document.getElementById('sister-choices');
+        const bMsg = document.getElementById('brother-msg');
+        const sMsg = document.getElementById('sister-msg');
+
+        // 音效
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+        function playSelectSound() { playTone(600, 'sine', 0.1); }
+        function playErrorSound() { playTone(150, 'sawtooth', 0.5); }
+        function playSuccessSound() { playTone(500, 'square', 0.1); setTimeout(() => playTone(800, 'square', 0.2), 100); }
+        function playWinSound() { playTone(400, 'sine', 0.1); setTimeout(() => playTone(500, 'sine', 0.1), 100); setTimeout(() => playTone(600, 'sine', 0.4), 200); }
+
+        function initLevel() {
+            if (currentLevel >= levels.length) {
+                winGame();
+                return;
+            }
+
+            brotherSelection = null;
+            sisterSelection = null;
+            isAnimating = false;
+
+            const currentChoices = levels[currentLevel].choices;
+            
+            // 渲染哥哥选项
+            bChoices.innerHTML = '';
+            currentChoices.forEach(c => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.innerText = c;
+                btn.onclick = () => selectChoice('brother', c, btn);
+                bChoices.appendChild(btn);
+            });
+
+            // 渲染妹妹选项
+            sChoices.innerHTML = '';
+            currentChoices.forEach(c => {
+                const btn = document.createElement('div');
+                btn.className = 'choice-btn';
+                btn.innerText = c;
+                btn.onclick = () => selectChoice('sister', c, btn);
+                sChoices.appendChild(btn);
+            });
+
+            updateProgress();
+            updateMessages();
+            updateShipPosition();
+        }
+
+        function selectChoice(player, choice, btnEl) {
+            if (isAnimating) return;
+            playSelectSound();
+
+            // 更新UI选中状态
+            const parent = player === 'brother' ? bChoices : sChoices;
+            Array.from(parent.children).forEach(child => child.classList.remove('selected'));
+            btnEl.classList.add('selected');
+
+            if (player === 'brother') brotherSelection = choice;
+            if (player === 'sister') sisterSelection = choice;
+
+            updateMessages();
+            checkResult();
+        }
+
+        function updateMessages() {
+            if (!brotherSelection && !sisterSelection) {
+                bMsg.innerText = "请大声商量去哪里！";
+                sMsg.innerText = "请大声商量去哪里！";
+            } else if (brotherSelection && !sisterSelection) {
+                bMsg.innerText = `你选了 ${brotherSelection}，等妹妹选择...`;
+                sMsg.innerText = `哥哥选好啦，快跟哥哥商量！`;
+            } else if (!brotherSelection && sisterSelection) {
+                bMsg.innerText = `妹妹选好啦，快跟妹妹商量！`;
+                sMsg.innerText = `你选了 ${sisterSelection}，等哥哥选择...`;
+            }
+        }
+
+        function checkResult() {
+            if (brotherSelection && sisterSelection) {
+                isAnimating = true;
+                
+                if (brotherSelection === sisterSelection) {
+                    // 选的一样，成功！
+                    playSuccessSound();
+                    bMsg.innerText = "太默契了！前进！";
+                    sMsg.innerText = "太默契了！前进！";
+                    
+                    setTimeout(() => {
+                        currentLevel++;
+                        initLevel();
+                    }, 1000);
+                } else {
+                    // 选的不一样，失败打转！
+                    playErrorSound();
+                    bMsg.innerText = "哎呀！选得不一样，船晕啦！";
+                    sMsg.innerText = "哎呀！选得不一样，船晕啦！";
+                    
+                    ship.classList.add('spin');
+                    
+                    setTimeout(() => {
+                        ship.classList.remove('spin');
+                        // 重置选择
+                        brotherSelection = null;
+                        sisterSelection = null;
+                        Array.from(bChoices.children).forEach(c => c.classList.remove('selected'));
+                        Array.from(sChoices.children).forEach(c => c.classList.remove('selected'));
+                        updateMessages();
+                        isAnimating = false;
+                    }, 1000);
+                }
+            }
+        }
+
+        function updateShipPosition() {
+            const progressRatio = currentLevel / levels.length;
+            const startLeft = 10;
+            const endLeft = 80;
+            const currentLeft = startLeft + (endLeft - startLeft) * progressRatio;
+            ship.style.left = `${currentLeft}%`;
+        }
+
+        function updateProgress() {
+            const bProg = document.getElementById('brother-progress');
+            const sProg = document.getElementById('sister-progress');
+            bProg.innerHTML = ''; sProg.innerHTML = '';
+            
+            for(let i=0; i<levels.length; i++) {
+                const d1 = document.createElement('div');
+                d1.className = `dot ${i < currentLevel ? 'active' : ''}`;
+                bProg.appendChild(d1);
+                
+                const d2 = document.createElement('div');
+                d2.className = `dot ${i < currentLevel ? 'active' : ''}`;
+                sProg.appendChild(d2);
+            }
+        }
+
+        function winGame() {
+            playWinSound();
+            bMsg.innerText = "🎉 找到宝藏啦！";
+            sMsg.innerText = "🎉 找到宝藏啦！";
+            ship.innerText = '👑⛵';
+            
+            setTimeout(() => {
+                let progress = parseInt(localStorage.getItem('niceTryProgress')) || 0;
+                if (progress < 2) {
+                    localStorage.setItem('niceTryProgress', 2); // 解锁第三关
+                }
+                alert("🎉 恭喜你们完成了第二关！你们商量得非常好！现在解锁第三关啦！");
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        // 初始化
+        initLevel();
+
+        // ====== 背景音乐生成器: 《划船歌》(Row Row Row Your Boat) ======
+        let bgmCtx;
+        let isPlayingBgm = false;
+        let bgmInterval;
+
+        const C4 = 261.6, D4 = 293.7, E4 = 329.6, F4 = 349.2, G4 = 392.0;
+        const C5 = 523.3;
+        
+        const melodyBgm = [
+            // Row, row, row your boat
+            {f: C4, d: 1.0}, {f: C4, d: 1.0}, {f: C4, d: 0.66}, {f: D4, d: 0.34}, {f: E4, d: 1.0},
+            // Gently down the stream
+            {f: E4, d: 0.66}, {f: D4, d: 0.34}, {f: E4, d: 0.66}, {f: F4, d: 0.34}, {f: G4, d: 2.0},
+            // Merrily merrily, merrily, merrily
+            {f: C5, d: 0.33}, {f: C5, d: 0.33}, {f: C5, d: 0.34}, 
+            {f: G4, d: 0.33}, {f: G4, d: 0.33}, {f: G4, d: 0.34},
+            {f: E4, d: 0.33}, {f: E4, d: 0.33}, {f: E4, d: 0.34},
+            {f: C4, d: 0.33}, {f: C4, d: 0.33}, {f: C4, d: 0.34},
+            // Life is but a dream
+            {f: G4, d: 0.66}, {f: F4, d: 0.34}, {f: E4, d: 0.66}, {f: D4, d: 0.34}, {f: C4, d: 2.0}
+        ];
+
+        function playBgmNote(frequency, duration, startTime) {
+            if (!bgmCtx) return;
+            const osc = bgmCtx.createOscillator();
+            const gain = bgmCtx.createGain();
+            
+            osc.type = 'sine'; // 划船歌用柔和的正弦波
+            osc.frequency.setValueAtTime(frequency, startTime);
+            
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.1, startTime + 0.1); 
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration - 0.05);
+            
+            osc.connect(gain);
+            gain.connect(bgmCtx.destination);
+            
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        }
+
+        function playBgmLoop() {
+            if (!isPlayingBgm) return;
+            
+            const now = bgmCtx.currentTime;
+            let timeOffset = 0;
+            const tempo = 0.5; // 播放速度
+            
+            melodyBgm.forEach(note => {
+                playBgmNote(note.f, note.d * tempo, now + timeOffset);
+                timeOffset += note.d * tempo;
+            });
+            
+            bgmInterval = setTimeout(playBgmLoop, (timeOffset + 0.5) * 1000);
+        }
+
+        function toggleMusic() {
+            const btn = document.getElementById('music-toggle');
+            if (!bgmCtx) { bgmCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            if (bgmCtx.state === 'suspended') { bgmCtx.resume(); }
+
+            isPlayingBgm = !isPlayingBgm;
+            if (isPlayingBgm) {
+                btn.classList.remove('off');
+                btn.innerText = '🎵';
+                playBgmLoop();
+            } else {
+                btn.classList.add('off');
+                btn.innerText = '🔇';
+                clearTimeout(bgmInterval);
+            }
+        }
+    </script>
+</body>
+</html>
